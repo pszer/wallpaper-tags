@@ -83,6 +83,7 @@ int pape(int argc, char ** argv);
 bool string_less_than(const std::string& a, const std::string& b);
 void sort_string_vec(std::vector<std::string>& vec);
 std::string make_lowercase_str(const std::string& str);
+std::string make_quote_str(const std::string& str);
 bool file_exists(const std::string& fname);
 
 int main(int argc, char ** argv) {
@@ -153,10 +154,17 @@ int read_files(void) {
 		bool first = true;
 		std::string temp = "";
 
+		bool quote = false;
 		std::size_t i, last=0;
 		for (i = last;; ++i) {
 			char c = str[i];
-			if (c == ' ' || !c) {
+			if (c == '"') {
+				if (!quote)
+					++last;
+				quote = !quote;
+			}
+
+			if ((c == ' ' && !quote) || (c == '"' && !quote) || !c) {
 				std::size_t pos = last;
 				std::size_t len = i-last;
 
@@ -187,9 +195,12 @@ int write_files(void) {
 	std::ofstream ostr(TAGS_FILE, std::ofstream::trunc);
 
 	for (auto file : files) {
-		ostr << file.fname;
+		ostr << make_quote_str(file.fname);
+
 		for (auto tag : file.tags) {
-			ostr << " " << tag;
+			bool has_space = (tag.find_first_of(' ') != std::string::npos);
+			std::string quote = has_space ? "\"" : "";
+			ostr << " " << make_quote_str(tag);
 		}
 		ostr << "\n";
 	}
@@ -373,7 +384,7 @@ std::string format_tag(const std::string& tag) {
 		}
 	}
 
-	return "\u001b[40m" + col + tag + reset_color;
+	return "\u001b[40m" + col + make_quote_str(tag) + reset_color;
 }
 
 void print_file(File * f) {
@@ -574,6 +585,12 @@ std::string make_lowercase_str(const std::string& str) {
 			c = 'a' + (c - 'A');
 	}
 	return result;
+}
+
+std::string make_quote_str(const std::string& str) {
+	bool has_space = (str.find_first_of(' ') != std::string::npos);
+	std::string quote = has_space ? "\"" : "";
+	return quote + str + quote;
 }
 
 bool file_exists(const std::string& fname) {
