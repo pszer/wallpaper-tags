@@ -49,6 +49,11 @@ To see the tags of some files, run
 ```
 tags display 'file1' 'file2' 'file3' ...
 ```
+You can run
+```
+tags display *
+```
+to display the tags of all files in your current working directory.
 
 ## Querying tags
 To query for files with some given tags, run
