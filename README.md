@@ -29,6 +29,10 @@ To add tags to a file, run
 ```
 tags add 'your_file' tag1 tag2 tag3 ...
 ```
+To add tags to multiple files, run
+```
+tags add -- 'file1' 'file2' ... -- tag1 tag2 tag3 ...
+```
 
 ## Removing tags
 To remove tags from a file, run
@@ -36,6 +40,10 @@ To remove tags from a file, run
 tags remove 'your_file' tag1 tag2 tag3 ...
 ```
 which will get rid of the given tags if they exist.
+To remove tags from multiple files, run
+```
+tags remove -- 'file1' 'file2' ... -- tag1 tag2 tag3 ...
+```
 
 ## Forgetting files
 To forget tagged files, run
