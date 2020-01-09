@@ -91,6 +91,6 @@ from your collection, you can run
 tags pape {'AND'} tag1 tag2 tag3 ...
 ```
 The arguments to 'pape' are the same as for 'query'. This option will find all wallpapers
-specified by your search requirements and show them in a feh slideshow in a new window. In
-feh, press LEFT/RIGHT ARROWS to switch between images in the slideshow and press RETURN on an
-image to make it your wallpaper.
+specified by your search requirements and show them in sxiv. In sxiv left-click to view image
+in full, right-click to mark an image and press 'q' to quit (default bindings). If you've
+marked an image and you quit sxiv, it will be made your new wallpaper.

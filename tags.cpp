@@ -27,12 +27,12 @@ const std::string CLEAR_MODE_USE = "tags clear {files ...}\n"
                                    "remove tagged files";
 const std::string DISP_MODE_USE  = "tags display {files ...}\n"
                                    "print the tags of given files";
-const std::string QUERY_MODE_USE = "tags query {'AND'} {tags ...}\n"
+const std::string QUERY_MODE_USE = "tags query {'AND'} [tags ...]\n"
                                    "find all files with given tags.\n"
                                    "optional 'AND' flag queries for files with ALL given tags";
 const std::string UPDATE_MODE_USE= "tags update\n"
                                    "removes entries for deleted files and sorts alphabetically tags";
-const std::string COUNT_MODE_USE = "tags count [tags ...]\n"
+const std::string COUNT_MODE_USE = "tags count {tags ...}\n"
                                    "counts occurences of given tags, if no tags given it counts all tags";
 const std::string PAPE_MODE_USE  = "tags pape {'AND'} {tags ...}\n"
                                    "opens all images matching tags in feh, press enter to set 'pape\n"
@@ -482,7 +482,6 @@ int update(int argc, char ** argv) {
 
 int pape(int argc, char ** argv) {
 	query(argc, argv);
-	std::cout << "\npress <RETURN> to make current image wallpaper" << std::endl;
 
 	std::vector<std::string> fnames;
 	bool intersect = false;
@@ -510,14 +509,32 @@ int pape(int argc, char ** argv) {
 			fnames.push_back(f.fname);
 	}
 
-	std::stringstream shell_str;
-	shell_str << "feh -A \"feh --bg-scale %F\" ";
+	if (fnames.empty()) {
+		std::cout << "no matching wallpapers" << std::endl;
+		return 1;
+	}
 
+	std::stringstream shell_str;
+	shell_str << "sxiv -q -t -o ";
 	for (auto& f : fnames) {
 		shell_str << "\"" << f << "\" ";
 	}
+	shell_str << " > /tmp/tagswall";
 
 	std::system(shell_str.str().c_str());
+
+	std::stringstream sstrm;
+	sstrm << std::ifstream("/tmp/tagswall").rdbuf(); 
+	std::string selected = sstrm.str();
+	if (selected.empty()) return 0;
+
+	std::size_t first_newline = selected.find_first_of('\n');
+	if (first_newline != std::string::npos)
+		selected = selected.substr(0, first_newline);
+
+	std::string set_wall = std::string("feh -q --bg-scale " + selected);
+	std::cout << set_wall << std::endl;
+	std::system(set_wall.c_str());
 
 	return 0;
 }
