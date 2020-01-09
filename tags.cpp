@@ -543,7 +543,7 @@ int pape(int argc, char ** argv) {
 	if (first_newline != std::string::npos)
 		selected = selected.substr(0, first_newline);
 
-	std::string set_wall = std::string("feh -q --bg-scale " + selected);
+	std::string set_wall = std::string("feh -q --bg-fill " + selected);
 	std::cout << set_wall << std::endl;
 	std::system(set_wall.c_str());
 
