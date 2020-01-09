@@ -19,9 +19,9 @@ const std::string PAPE_MODE  = "pape";
 
 const std::string INIT_MODE_USE  = "tags init\n"
                                    "creates a .tags file in working directory";
-const std::string ADD_MODE_USE   = "tags add [file] {tags ...}\n"
+const std::string ADD_MODE_USE   = "tags add [file]/[-- files ... --] {tags ...}\n"
                                    "add tags to file";
-const std::string RM_MODE_USE    = "tags remove [file] {tags ...}\n"
+const std::string RM_MODE_USE    = "tags remove [file]/[-- files ... --] {tags ...}\n"
                                    "remove specific tags from file";
 const std::string CLEAR_MODE_USE = "tags clear {files ...}\n"
                                    "remove tagged files";
@@ -69,6 +69,9 @@ std::vector<File> query_tags_intersect(const std::vector<std::string>& tags);
 
 void print_file(File * file);
 std::string format_tag(const std::string& tag);
+
+void add_tag(File& file, const std::string& str);
+int  rm_tag (File& file, const std::string& str); // returns 1 if tag existed
 
 std::stringstream op_output = std::stringstream("");
 int add(int argc, char ** argv); 
@@ -221,6 +224,19 @@ bool file_has_tag(File * file, const std::string& tag) {
 	return false;
 }
 
+void add_tag(File& file, const std::string& str) {
+	auto f = std::find(file.tags.begin(), file.tags.end(), str);
+	if (f != file.tags.end()) return;
+	file.tags.push_back(str);
+}
+
+int rm_tag (File& file, const std::string& str) {
+	auto f = std::find(file.tags.begin(), file.tags.end(), str);
+	if (f == file.tags.end()) return 0;
+	file.tags.erase(f);
+	return 1;
+}
+
 std::vector<File> query_tags(const std::vector<std::string>& tags) {
 	std::vector<File> q;
 
@@ -265,33 +281,60 @@ std::vector<File> query_tags_intersect(const std::vector<std::string>& tags) {
 int add(int argc, char ** argv) {
 	if (argc < 3) return 0;
 
-	std::string fname = std::string(argv[2]);
+	std::vector<std::string> to_add_fnames;
+	std::vector<File*> to_add;
 
-	// check if file exists
-	if (!file_exists(fname)) {
-		std::cout << "file \"" << fname << "\" doesn't exist" << std::endl;
-		return 0;
+	int tags_index = 3;
+	std::string fname = std::string(argv[2]);
+	if (fname == "--") {
+		int j;
+		for (j = 3; j < argc; ++j) {
+			std::string str = std::string(argv[j]);
+			if (str == "--")
+				break;
+			else
+				to_add_fnames.push_back(str);
+		}
+
+		if (j == argc) {
+			std::cerr << "expected closing --" << std::endl;
+			return 0;
+		}
+
+		tags_index = j+1;
+	} else {
+		to_add_fnames.push_back(fname);
 	}
 
-	File * f = find_file_fname(fname);
-	if (f == nullptr) {
-		File new_file;
-		new_file.fname = fname;
-		files.push_back(new_file);
-		f = find_file_fname(fname);
+	for (auto& s : to_add_fnames) {
+		// check if file exists
+		if (!file_exists(s)) {
+			std::cerr << "file \"" << s << "\" doesn't exist" << std::endl;
+			return 0;
+		}
+
+		File * f = find_file_fname(s);
+		if (f == nullptr) {
+			File new_file;
+			new_file.fname = s;
+			files.push_back(new_file);
+			f = find_file_fname(s);
+		}
+		to_add.push_back(f);
 	}
 
 	int i;
-	for (i = 3; i < argc; ++i) {
+	for (i = tags_index; i < argc; ++i) {
 		std::string tag = make_lowercase_str(std::string(argv[i]));
 
-		if (file_has_tag(f, tag))
-			continue;
-
-		f->tags.push_back(tag);
+		for (auto& f : to_add) {
+			add_tag(*f, tag);
+		}
 	}
 
-	sort_string_vec(f->tags);
+	for (auto f : to_add) {
+		sort_string_vec(f->tags);
+	}
 
 	return write_files();
 }
@@ -299,20 +342,43 @@ int add(int argc, char ** argv) {
 int remove(int argc, char ** argv) {
 	if (argc < 3) return 0;
 
-	std::string fname = argv[2];
-	File * f = find_file_fname(fname);
-	if (f == nullptr)
-		return 0;
+	std::vector<std::string> to_rm_fnames;
+	std::vector<File*> to_rm;
+
+	int tags_index = 3;
+	std::string fname = std::string(argv[2]);
+	if (fname == "--") {
+		int j;
+		for (j = 3; j < argc; ++j) {
+			std::string str = std::string(argv[j]);
+			if (str == "--")
+				break;
+			else
+				to_rm_fnames.push_back(str);
+		}
+
+		if (j == argc) {
+			std::cerr << "expected closing --" << std::endl;
+			return 0;
+		}
+
+		tags_index = j+1;
+	} else {
+		to_rm_fnames.push_back(fname);
+	}
+
+	for (auto& s : to_rm_fnames) {
+		File * f = find_file_fname(s);
+		if (f)
+			to_rm.push_back(f);
+	}
 
 	int i;
-	for (i = 3; i < argc; ++i) {
+	for (i = tags_index; i < argc; ++i) {
 		std::string tag = make_lowercase_str(std::string(argv[i]));
 
-		for (auto ftag = f->tags.begin(); ftag != f->tags.end();) {
-			if (*ftag == tag)
-				f->tags.erase(ftag);
-			else
-				++ftag;
+		for (auto f : to_rm) {
+			rm_tag(*f, tag);
 		}
 	}
 
