@@ -5,11 +5,12 @@
 #include <algorithm>
 #include <array>
 
-enum MODE { ERR , ADD , RM , CLEAR , DISP , QUERY , COUNT , UPDATE , PAPE };
+enum MODE { ERR , ADD , RM , REP , CLEAR , DISP , QUERY , COUNT , UPDATE , PAPE };
 
 const std::string INIT_MODE  = "init";
 const std::string ADD_MODE   = "add";
 const std::string RM_MODE    = "remove";
+const std::string REP_MODE   = "replace";
 const std::string CLEAR_MODE = "clear";
 const std::string DISP_MODE  = "display";
 const std::string QUERY_MODE = "query";
@@ -21,6 +22,9 @@ const std::string INIT_MODE_USE  = "tags init\n"
                                    "creates a .tags file in working directory";
 const std::string ADD_MODE_USE   = "tags add [file]/[-- files ... --] {tags ...}\n"
                                    "add tags to file";
+const std::string REP_MODE_USE   = "tags replace [files ...] oldtag newtag\n"
+                                   "replaces instances of oldtag with newtag\n"
+                                   "give no files to replace ALL instances";
 const std::string RM_MODE_USE    = "tags remove [file]/[-- files ... --] {tags ...}\n"
                                    "remove specific tags from file";
 const std::string CLEAR_MODE_USE = "tags clear {files ...}\n"
@@ -38,7 +42,7 @@ const std::string PAPE_MODE_USE  = "tags pape {'AND'} {tags ...}\n"
                                    "opens all images matching tags in feh, press enter to set 'pape\n"
                                    "optional 'AND' flag queries for files with ALL given tags";
 
-const std::string HELP_MSG = "tags [option] ...\noptions: init/add/remove/clear/query/display/update/pape\n\n"
+const std::string HELP_MSG = "tags [option] ...\noptions: init/add/remove/replace/clear/query/display/update/pape\n\n"
  + INIT_MODE_USE + "\n\n"
  + ADD_MODE_USE + "\n\n"
  + RM_MODE_USE + "\n\n"
@@ -71,11 +75,13 @@ void print_file(File * file);
 std::string format_tag(const std::string& tag);
 
 void add_tag(File& file, const std::string& str);
+int  rep_tag(File& file, const std::string& old_tag, const std::string& new_tag); // returns 1 if replaced
 int  rm_tag (File& file, const std::string& str); // returns 1 if tag existed
 
 std::stringstream op_output = std::stringstream("");
 int add(int argc, char ** argv); 
 int remove(int argc, char ** argv); 
+int replace(int argc, char ** argv); 
 int clear(int argc, char ** argv); 
 int display(int argc, char ** argv); 
 int query(int argc, char ** argv); 
@@ -118,6 +124,7 @@ int main(int argc, char ** argv) {
 	#define CHECK_ELSE(tok) else if (mode == tok ## _MODE) m=tok
 	CHECK_IF(ADD);
 	CHECK_ELSE(RM);
+	CHECK_ELSE(REP);
 	CHECK_ELSE(CLEAR);
 	CHECK_ELSE(DISP);
 	CHECK_ELSE(QUERY);
@@ -134,6 +141,7 @@ int main(int argc, char ** argv) {
 	switch (m) {
 		CASE (ADD,   add);
 		CASE (RM,    remove);
+		CASE (REP,   replace);
 		CASE (CLEAR, clear);
 		CASE (DISP,  display);
 		CASE (QUERY, query);
@@ -232,6 +240,17 @@ void add_tag(File& file, const std::string& str) {
 	file.tags.push_back(str);
 }
 
+int rep_tag(File& file, const std::string& old_tag, const std::string& new_tag) {
+	for (auto t = file.tags.begin(); t != file.tags.end(); ++t) {
+		if (*t == old_tag) {
+			file.tags.erase(t);
+			add_tag(file, new_tag);
+			return 1;
+		}
+	}
+	return 0;
+}
+
 int rm_tag (File& file, const std::string& str) {
 	auto f = std::find(file.tags.begin(), file.tags.end(), str);
 	if (f == file.tags.end()) return 0;
@@ -314,7 +333,7 @@ int add(int argc, char ** argv) {
 			std::cerr << "file \"" << s << "\" doesn't exist" << std::endl;
 			return 0;
 		}
-
+		
 		File * f = find_file_fname(s);
 		if (f == nullptr) {
 			File new_file;
@@ -322,6 +341,10 @@ int add(int argc, char ** argv) {
 			files.push_back(new_file);
 			f = find_file_fname(s);
 		}
+	}
+
+	for (auto& s : to_add_fnames) {
+		File * f = find_file_fname(s);
 		to_add.push_back(f);
 	}
 
@@ -338,6 +361,51 @@ int add(int argc, char ** argv) {
 		sort_string_vec(f->tags);
 	}
 
+	return write_files();
+}
+
+int replace(int argc, char ** argv) {
+	if (argc < 4) return 0;
+
+	int instance_count = 0;
+	int file_count = 0;
+	std::string old_tag, new_tag;
+
+	// replace ALL instances
+	if (argc == 4) {
+		old_tag = make_lowercase_str(std::string(argv[2]));
+		new_tag = make_lowercase_str(std::string(argv[3]));
+
+		file_count = files.size();
+
+		for (auto& f : files) {
+			instance_count += rep_tag(f, old_tag, new_tag);
+		}
+	} else {
+		std::vector<std::string> to_rep_fnames;
+		std::vector<File*> to_rep;
+
+		int i;
+		for (i = 2; i < argc - 2; ++i) {
+			to_rep_fnames.push_back(std::string(argv[i]));
+		}
+
+		for (auto& fname : to_rep_fnames) {
+			File* f = find_file_fname(fname);
+			if (f) to_rep.push_back(f);
+		}
+
+		old_tag = make_lowercase_str(std::string(argv[argc-2]));
+		new_tag = make_lowercase_str(std::string(argv[argc-1]));
+		file_count = to_rep.size();
+
+		for (auto f : to_rep) {
+			instance_count += rep_tag(*f, old_tag, new_tag);
+		}
+	}
+
+	std::cout << "Replaced " << instance_count << " instances of " << format_tag(old_tag) <<
+		" with " << format_tag(new_tag) << " across " << file_count << " file(s)" << std::endl;
 	return write_files();
 }
 
