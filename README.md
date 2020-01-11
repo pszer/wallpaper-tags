@@ -45,6 +45,18 @@ To remove tags from multiple files, run
 tags remove -- 'file1' 'file2' ... -- tag1 tag2 tag3 ...
 ```
 
+# Replacing tags
+To replace a tag, run
+```
+tags replace 'file1' 'file2' ... old-tag new-tag
+```
+which replaces all instances of 'old-tag' in the given files with 'new-tag'.
+If you run
+```
+tags replace old_tag new_tag
+```
+then ALL instances of 'old-tag' are replaced by 'new-tag' in ALL files.
+
 ## Forgetting files
 To forget tagged files, run
 ```

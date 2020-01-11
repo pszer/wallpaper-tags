@@ -46,6 +46,7 @@ const std::string HELP_MSG = "tags [option] ...\noptions: init/add/remove/replac
  + INIT_MODE_USE + "\n\n"
  + ADD_MODE_USE + "\n\n"
  + RM_MODE_USE + "\n\n"
+ + REP_MODE_USE + "\n\n"
  + CLEAR_MODE_USE + "\n\n"
  + DISP_MODE_USE + "\n\n"
  + QUERY_MODE_USE + "\n\n"
