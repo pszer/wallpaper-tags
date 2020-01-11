@@ -114,14 +114,16 @@ int main(int argc, char ** argv) {
 	}
 
 	MODE m = ERR;
-	if (mode == ADD_MODE) { m = ADD; }
-	else if (mode == RM_MODE) { m = RM; }
-	else if (mode == CLEAR_MODE) { m = CLEAR; }
-	else if (mode == DISP_MODE) { m = DISP; }
-	else if (mode == QUERY_MODE) { m = QUERY; }
-	else if (mode == COUNT_MODE) { m = COUNT; }
-	else if (mode == UPDATE_MODE) { m = UPDATE; }
-	else if (mode == PAPE_MODE) { m = PAPE; }
+	#define CHECK_IF(tok) if (mode == tok ## _MODE) m=tok
+	#define CHECK_ELSE(tok) else if (mode == tok ## _MODE) m=tok
+	CHECK_IF(ADD);
+	CHECK_ELSE(RM);
+	CHECK_ELSE(CLEAR);
+	CHECK_ELSE(DISP);
+	CHECK_ELSE(QUERY);
+	CHECK_ELSE(COUNT);
+	CHECK_ELSE(UPDATE);
+	CHECK_ELSE(PAPE);
 
 	if (m == ERR) {
 		std::cerr << HELP_MSG << std::endl;
@@ -130,14 +132,14 @@ int main(int argc, char ** argv) {
 
 	#define CASE(en,func) case en: func(argc,argv); break;
 	switch (m) {
-	CASE (ADD,   add);
-	CASE (RM,    remove);
-	CASE (CLEAR, clear);
-	CASE (DISP,  display);
-	CASE (QUERY, query);
-	CASE (COUNT, count);
-	CASE (UPDATE,update);
-	CASE (PAPE,  pape);
+		CASE (ADD,   add);
+		CASE (RM,    remove);
+		CASE (CLEAR, clear);
+		CASE (DISP,  display);
+		CASE (QUERY, query);
+		CASE (COUNT, count);
+		CASE (UPDATE,update);
+		CASE (PAPE,  pape);
 	}
 
 	return 0;
