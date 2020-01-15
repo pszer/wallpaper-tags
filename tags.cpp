@@ -38,9 +38,11 @@ const std::string UPDATE_MODE_USE= "tags update\n"
                                    "removes entries for deleted files and sorts alphabetically tags";
 const std::string COUNT_MODE_USE = "tags count {tags ...}\n"
                                    "counts occurences of given tags, if no tags given it counts all tags";
-const std::string PAPE_MODE_USE  = "tags pape {'AND'} {tags ...}\n"
+const std::string PAPE_MODE_USE  = "tags [pape] {'AND'} {tags ...}\n"
                                    "opens all images matching tags in feh, press enter to set 'pape\n"
-                                   "optional 'AND' flag queries for files with ALL given tags";
+                                   "optional 'AND' flag queries for files with ALL given tags"
+                                   "set pape with different settings by replacing keyword pape with:\n"
+                                   "pape-center, pape-fill, pape-max, pape-scale, pape-tile";
 
 const std::string HELP_MSG = "tags [option] ...\noptions: init/add/remove/replace/clear/query/display/update/pape\n\n"
  + INIT_MODE_USE + "\n\n"
@@ -55,6 +57,16 @@ const std::string HELP_MSG = "tags [option] ...\noptions: init/add/remove/replac
  + PAPE_MODE_USE;
 
 const std::string TAGS_FILE = ".tags";
+
+
+std::array<std::pair<std::string, std::string>, 5> pape_modes =
+{
+	std::make_pair<std::string, std::string>("pape-center", "--bg-center"),
+	std::make_pair<std::string, std::string>("pape-fill", "--bg-fill"),
+	std::make_pair<std::string, std::string>("pape-max", "--bg-max"),
+	std::make_pair<std::string, std::string>("pape-scale", "--bg-scale"),
+	std::make_pair<std::string, std::string>("pape-tile", "--bg-tile")
+};
 
 struct File {
 	std::string fname;
@@ -123,6 +135,7 @@ int main(int argc, char ** argv) {
 	MODE m = ERR;
 	#define CHECK_IF(tok) if (mode == tok ## _MODE) m=tok
 	#define CHECK_ELSE(tok) else if (mode == tok ## _MODE) m=tok
+	#define CHECK_ELSE_STR(tok,str) else if (mode == str) m=tok
 	CHECK_IF(ADD);
 	CHECK_ELSE(RM);
 	CHECK_ELSE(REP);
@@ -132,6 +145,11 @@ int main(int argc, char ** argv) {
 	CHECK_ELSE(COUNT);
 	CHECK_ELSE(UPDATE);
 	CHECK_ELSE(PAPE);
+	CHECK_ELSE_STR(PAPE, pape_modes[0].first);
+	CHECK_ELSE_STR(PAPE, pape_modes[1].first);
+	CHECK_ELSE_STR(PAPE, pape_modes[2].first);
+	CHECK_ELSE_STR(PAPE, pape_modes[3].first);
+	CHECK_ELSE_STR(PAPE, pape_modes[4].first);
 
 	if (m == ERR) {
 		std::cerr << HELP_MSG << std::endl;
@@ -631,6 +649,16 @@ int update(int argc, char ** argv) {
 int pape(int argc, char ** argv) {
 	query(argc, argv);
 
+    //"pape-center pape-fill, pape-max, pape-scale, pape-tile";
+    std::string pape_arg  = std::string(argv[1]);
+	std::string pape_mode = "--bg-fill";
+	for (auto& mode : pape_modes) {
+		if (mode.first == pape_arg) {
+			pape_mode = mode.second;
+			break;
+		}
+	}
+
 	std::vector<std::string> fnames;
 	bool intersect = false;
 
@@ -680,7 +708,7 @@ int pape(int argc, char ** argv) {
 	if (first_newline != std::string::npos)
 		selected = selected.substr(0, first_newline);
 
-	std::string set_wall = std::string("feh -q --bg-fill \"" + selected + "\"");
+	std::string set_wall = std::string("feh -q "+pape_mode+" \"" + selected + "\"");
 	std::cout << set_wall << std::endl;
 	std::system(set_wall.c_str());
 

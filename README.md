@@ -114,3 +114,6 @@ The arguments to 'pape' are the same as for 'query'. This option will find all w
 specified by your search requirements and show them in sxiv. In sxiv left-click to view image
 in full, right-click to mark an image and press 'q' to quit (default bindings). If you've
 marked an image and you quit sxiv, it will be made your new wallpaper.
+
+Replace keyword 'pape' by any of these to replace how the wallpaper is set: pape-center, pape-fill,
+pape-max, pape-scale, pape-tile.
